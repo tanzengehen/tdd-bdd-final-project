@@ -104,3 +104,58 @@ class TestProductModel(unittest.TestCase):
     #
     # ADD YOUR TEST CASES HERE
     #
+    def test_read_a_product(self):
+        """It should Read a product from the database"""
+        product = ProductFactory()
+        # check if both variants work for logger (%s and {})
+        logger.info(f"Created for Reading: product id= %s", product.id,
+                    f"name= %s", product.name,
+                    f"description= %s", product.description,
+                    f"price={product.price},",
+                    f"available={product.available},",
+                    f"category={product.category}")
+        product.id = None
+        # puts product in the db
+        product.create()
+        self.assertNotNone(product.id)
+        # gets product from db
+        found_product = Product.find(product.id)
+        self.assertTrue(product_found.id, product.id)
+        self.assertTrue(product_found.name, product.name)
+        self.assertTrue(product_found.description, product.description)
+        self.assertTrue(product_found.price, product.price)
+        # self.assertTrue(product_found.available, product.available)
+        # self.assertTrue(product_found.category, product.category)
+
+    def test_update_a_product(self):
+        """It should Update a product in the database"""    
+        # produce product and store it in db
+        product = ProductFactory()
+        # check if both variants work for logger (%s and {})
+        logger.info(f"Created for Updating: product id= %s", product.id,
+                    f"name= %s", product.name,
+                    f"description= %s", product.description,
+                    f"price={product.price},",
+                    f"available={product.available},",
+                    f"category={product.category}")
+        product.id = None
+        product.create()
+        self.assertNotNone(product.id)
+        # update and save product
+        product.description = "new description string"
+        original_id = product.id
+        logger.info(f"Read before Updating: product id= %s", product.id,
+                    f"name= %s", product.name,
+                    f"description= %s", product.description)
+        product.update()
+        self.assertEqual(product.id, original_id)
+        self.assertEqual(product.description, "new description string")
+        logger.info(f"Read after Updating: product id= %s", product.id,
+                    f"name= %s", product.name,
+                    f"description= %s", product.description)
+        # read the updated product (same id, new description)
+        # should be the only product
+        products = Product.all()
+        self.assertEqual(len(products), 1)
+        self.assertEqual(products[0].id, original_id)
+        self.assertEqual(products[0].description, "new description string")
