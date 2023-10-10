@@ -34,7 +34,7 @@ from tests.factories import ProductFactory
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
-
+logger = logging.getLogger("flask.app")
 
 ######################################################################
 #  P R O D U C T   M O D E L   T E S T   C A S E S
@@ -106,20 +106,17 @@ class TestProductModel(unittest.TestCase):
     #
     def test_read_a_product(self):
         """It should Read a product from the database"""
+        # produce product and store it in db
         product = ProductFactory()
-        # check if both variants work for logger (%s and {})
-        logger.info(f"Created for Reading: product id= %s", product.id,
-                    f"name= %s", product.name,
-                    f"description= %s", product.description,
-                    f"price={product.price},",
-                    f"available={product.available},",
-                    f"category={product.category}")
+        logger.info(f"Created for Reading: product id= {product.id}, \
+        name= {product.name}, description= {product.description}, \
+        price={product.price}, available={product.available}, \
+        category={product.category}")
         product.id = None
-        # puts product in the db
         product.create()
-        self.assertNotNone(product.id)
+        self.assertIsNotNone(product.id)
         # gets product from db
-        found_product = Product.find(product.id)
+        product_found = Product.find(product.id)
         self.assertTrue(product_found.id, product.id)
         self.assertTrue(product_found.name, product.name)
         self.assertTrue(product_found.description, product.description)
@@ -131,31 +128,94 @@ class TestProductModel(unittest.TestCase):
         """It should Update a product in the database"""    
         # produce product and store it in db
         product = ProductFactory()
-        # check if both variants work for logger (%s and {})
-        logger.info(f"Created for Updating: product id= %s", product.id,
-                    f"name= %s", product.name,
-                    f"description= %s", product.description,
-                    f"price={product.price},",
-                    f"available={product.available},",
-                    f"category={product.category}")
+        logger.info(f"Created for Updating: product id= {product.id}, \
+            name= {product.name}, description= {product.description}, \
+            price={product.price}, available={product.available}, \
+            category={product.category}")
         product.id = None
         product.create()
-        self.assertNotNone(product.id)
+        self.assertIsNotNone(product.id)
         # update and save product
         product.description = "new description string"
         original_id = product.id
-        logger.info(f"Read before Updating: product id= %s", product.id,
-                    f"name= %s", product.name,
-                    f"description= %s", product.description)
+        logger.info(f"Read before Updating: product id= {product.id}, \
+            name= {product.name}, description= {product.description}, \
+            price={product.price}, available={product.available}, \
+            category={product.category}")
         product.update()
         self.assertEqual(product.id, original_id)
         self.assertEqual(product.description, "new description string")
-        logger.info(f"Read after Updating: product id= %s", product.id,
-                    f"name= %s", product.name,
-                    f"description= %s", product.description)
+        logger.info(f"Read after Updating: product id= {product.id}, \
+            name= {product.name}, description= {product.description}, \
+            price={product.price}, available={product.available}, \
+            category={product.category}")
         # read the updated product (same id, new description)
         # should be the only product
         products = Product.all()
         self.assertEqual(len(products), 1)
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "new description string")
+        # Todo: sad path
+        #product.id = None
+        #product.update()
+        #self.assertRaises(DataValidationError("Update called with empty ID field"))
+        
+    def test_delete_a_product(self):
+        """It should Delete a product in the database"""    
+        # produce product and store it in db
+        product = ProductFactory()
+        logger.info(f"Created for Deleting: \nproduct id= {product.id}, \
+        \nname= {product.name}, \ndescription= {product.description}, \
+        \nprice={product.price}, \navailable={product.available}, \
+        \ncategory={product.category}")
+        product.id = None
+        product.create()
+        self.assertIsNotNone(product.id)
+        # count: it should be the only one
+        self.assertEqual(len(Product.all()), 1)
+        products = Product.all()
+        self.assertEqual(products[0].id, product.id)
+        self.assertEqual(products[0].name, product.name)
+        product.delete()
+        # count again (or again 'products = Product.all()' for refresh)
+        self.assertEqual(len(Product.all()), 0)
+    
+    def test_list_all_products(self):
+        """It should List all products of the database"""    
+        # be sure db is empty
+        products = Product.all()
+        self.assertEqual(products, [])
+        # produce products and store them in db
+        for _ in range(5):
+            product = ProductFactory()
+            logger.info(f"Created for Listing: \nproduct id= {product.id}, \
+            \nname= {product.name}, \ndescription= {product.description}, \
+            \nprice={product.price}, \navailable={product.available}, \
+            \ncategory={product.category}")
+            product.id = None
+            product.create()
+        products = Product.all()
+        self.assertEqual(len(products), 5)
+
+    def test_find_product_by_name(self):
+        """It should find a product by name"""    
+        # produce products
+        products = ProductFactory.create_batch(5)
+        # store them in db
+        for product in products:
+            logger.info(f"Created for Listing: \nproduct id = {product.id}, \
+            \nname = {product.name}, \ndescription = {product.description}, \
+            \nprice ={product.price}, \navailable ={product.available}, \
+            \ncategory = {product.category}\n")
+            product.id = None
+            product.create()
+        self.assertEqual(len(products), 5)
+        # find first name and count its occurrence
+        name0 = products[0].name
+        name_count = len([product for product in products if product.name == name0])
+        logger.info(f"name = {name0}, count = {name_count}")
+        products_with_name0 = Product.find_by_name(name0)
+        # count the found products (len() doesn't work because it's a query!)
+        self.assertEqual(products_with_name0.count(), name_count)
+        for _ in products_with_name0:
+            self.assertEqual(_.name, name0)
