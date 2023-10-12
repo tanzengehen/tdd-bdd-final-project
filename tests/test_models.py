@@ -36,6 +36,7 @@ DATABASE_URI = os.getenv(
 )
 logger = logging.getLogger("flask.app")
 
+
 ######################################################################
 #  P R O D U C T   M O D E L   T E S T   C A S E S
 ######################################################################
@@ -108,10 +109,14 @@ class TestProductModel(unittest.TestCase):
         """It should Read a product from the database"""
         # produce product and store it in db
         product = ProductFactory()
-        logger.info(f"Created for Reading: product id= {product.id}, \
-        name= {product.name}, description= {product.description}, \
-        price={product.price}, available={product.available}, \
-        category={product.category}")
+        logger.info("Create for Reading: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
         product.id = None
         product.create()
         self.assertIsNotNone(product.id)
@@ -125,30 +130,42 @@ class TestProductModel(unittest.TestCase):
         # self.assertTrue(product_found.category, product.category)
 
     def test_update_a_product(self):
-        """It should Update a product in the database"""    
+        """It should Update a product in the database"""
         # produce product and store it in db
         product = ProductFactory()
-        logger.info(f"Created for Updating: product id= {product.id}, \
-            name= {product.name}, description= {product.description}, \
-            price={product.price}, available={product.available}, \
-            category={product.category}")
+        logger.info("Create for Updating: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
         product.id = None
         product.create()
         self.assertIsNotNone(product.id)
         # update and save product
         product.description = "new description string"
         original_id = product.id
-        logger.info(f"Read before Updating: product id= {product.id}, \
-            name= {product.name}, description= {product.description}, \
-            price={product.price}, available={product.available}, \
-            category={product.category}")
+        logger.info("Read before Updating: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
         product.update()
         self.assertEqual(product.id, original_id)
         self.assertEqual(product.description, "new description string")
-        logger.info(f"Read after Updating: product id= {product.id}, \
-            name= {product.name}, description= {product.description}, \
-            price={product.price}, available={product.available}, \
-            category={product.category}")
+        logger.info("Read after Updating: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
         # read the updated product (same id, new description)
         # should be the only product
         products = Product.all()
@@ -156,18 +173,22 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "new description string")
         # Todo: sad path
-        #product.id = None
-        #product.update()
-        #self.assertRaises(DataValidationError("Update called with empty ID field"))
-        
+        # product.id = None
+        # product.update()
+        # self.assertRaises(DataValidationError("Update called with empty ID field"))
+
     def test_delete_a_product(self):
-        """It should Delete a product in the database"""    
+        """It should Delete a product in the database"""
         # produce product and store it in db
         product = ProductFactory()
-        logger.info(f"Created for Deleting: \nproduct id= {product.id}, \
-        \nname= {product.name}, \ndescription= {product.description}, \
-        \nprice={product.price}, \navailable={product.available}, \
-        \ncategory={product.category}")
+        logger.info("Create for Deleting: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
         product.id = None
         product.create()
         self.assertIsNotNone(product.id)
@@ -179,43 +200,211 @@ class TestProductModel(unittest.TestCase):
         product.delete()
         # count again (or again 'products = Product.all()' for refresh)
         self.assertEqual(len(Product.all()), 0)
-    
+
     def test_list_all_products(self):
-        """It should List all products of the database"""    
+        """It should List all products of the database"""
         # be sure db is empty
         products = Product.all()
         self.assertEqual(products, [])
         # produce products and store them in db
         for _ in range(5):
             product = ProductFactory()
-            logger.info(f"Created for Listing: \nproduct id= {product.id}, \
-            \nname= {product.name}, \ndescription= {product.description}, \
-            \nprice={product.price}, \navailable={product.available}, \
-            \ncategory={product.category}")
+            logger.info("Create for Listing: \nproduct id= %s, \nname= %s, \
+                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                        product.id,
+                        product.name,
+                        product.description,
+                        product.price,
+                        product.available,
+                        product.category)
             product.id = None
             product.create()
         products = Product.all()
         self.assertEqual(len(products), 5)
 
     def test_find_product_by_name(self):
-        """It should find a product by name"""    
+        """It should find all product with this name"""
         # produce products
-        products = ProductFactory.create_batch(5)
+        products_n = ProductFactory.create_batch(5)
         # store them in db
-        for product in products:
-            logger.info(f"Created for Listing: \nproduct id = {product.id}, \
-            \nname = {product.name}, \ndescription = {product.description}, \
-            \nprice ={product.price}, \navailable ={product.available}, \
-            \ncategory = {product.category}\n")
+        for product in products_n:
+            logger.info("Create for Find by Name: \nproduct id= %s, \nname= %s, \
+                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                        product.id,
+                        product.name,
+                        product.description,
+                        product.price,
+                        product.available,
+                        product.category)
             product.id = None
             product.create()
-        self.assertEqual(len(products), 5)
+        self.assertEqual(len(products_n), 5)
         # find first name and count its occurrence
-        name0 = products[0].name
-        name_count = len([product for product in products if product.name == name0])
-        logger.info(f"name = {name0}, count = {name_count}")
+        name0 = products_n[0].name
+        name_count = len([product for product in products_n if product.name == name0])
+        logger.info("name = %s, count = %s", name0, name_count)
         products_with_name0 = Product.find_by_name(name0)
         # count the found products (len() doesn't work because it's a query!)
         self.assertEqual(products_with_name0.count(), name_count)
+        # check that found products have the right name
         for _ in products_with_name0:
             self.assertEqual(_.name, name0)
+
+    def test_find_product_by_category(self):
+        """It should find all products in a category"""
+        # produce products
+        products_c = ProductFactory.create_batch(15)
+        # store them in db
+        for product in products_c:
+            logger.info("Create for Find By Category: \nproduct id= %s, \nname= %s, \
+                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                        product.id,
+                        product.name,
+                        product.description,
+                        product.price,
+                        product.available,
+                        product.category)
+            product.id = None
+            product.create()
+        self.assertEqual(len(products_c), 15)
+        # read first category and count its occurrence
+        category0 = products_c[0].category
+        category_count = len([product for product in products_c if product.category == category0])
+        logger.info("category = %s, count = %s", category0, category_count)
+        # find products by this category
+        found = Product.find_by_category(category0)
+        # count the found products
+        self.assertEqual(found.count(), category_count)
+        # check that found products are in the right category
+        for _ in found:
+            self.assertEqual(_.category, category0)
+
+    def test_find_product_by_availability(self):
+        """It should find all availabe products"""
+        # produce products
+        products_a = ProductFactory.create_batch(10)
+        # store them in db
+        for product in products_a:
+            logger.info("Create for Find By Availibility: \nproduct id= %s, \nname= %s, \
+                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                        product.id,
+                        product.name,
+                        product.description,
+                        product.price,
+                        product.available,
+                        product.category)
+            product.id = None
+            product.create()
+        self.assertEqual(len(products_a), 10)
+        # read first category and count its occurrence
+        availability0 = products_a[0].available
+        # count products with this availability
+        count = len([product for product in products_a if product.available == availability0])
+        logger.info("availability = %s, count = %s", availability0, count)
+        # find products with this availability
+        found = Product.find_by_availability(availability0)
+        # count the found products
+        self.assertEqual(found.count(), count)
+        # check that found products are in the right availability
+        for _ in found:
+            self.assertEqual(_.available, availability0)
+
+    def test_find_product_by_price(self):
+        """It should find all products with this price"""
+        # produce products
+        products_p = ProductFactory.create_batch(5)
+        # store them in db
+        for product in products_p:
+            logger.info("Create for Find By Availibility: \nproduct id= %s, \nname= %s, \
+                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                        product.id,
+                        product.name,
+                        product.description,
+                        product.price,
+                        product.available,
+                        product.category)
+            product.id = None
+            product.create()
+        self.assertEqual(len(products_p), 5)
+
+        # read first price and count its occurrence
+        price0float = products_p[0].price
+        # count products with this price
+        count = len([product for product in products_p if product.price == price0float])
+        logger.info("price = %2f, count = %s", price0float, count)
+        # find products with this price
+        found = Product.find_by_price(price0float)
+        # count the found products
+        self.assertEqual(found.count(), count)
+        # check that found products have the right price
+        for _ in found:
+            self.assertEqual(Decimal(_.price), price0float)
+
+        # handle string-exception
+        price0string = str(products_p[0].price)
+        logger.info("price = %s", price0string)
+        # find products with this price
+        found = Product.find_by_price(price0string)
+        # count the found products
+        self.assertEqual(found.count(), count)
+        # check that found products have the right price
+        for _ in found:
+            self.assertEqual(Decimal(_.price), Decimal(price0string))
+
+    def test_serialize(self):
+        """Product should be stored in dictionary"""
+        product = ProductFactory()
+        logger.info("Create for Serializing: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
+        dictionary = product.serialize()
+        self.assertEqual(dictionary['id'], product.id)
+        self.assertEqual(dictionary['name'], product.name)
+        self.assertEqual(dictionary['description'], product.description)
+        self.assertEqual(dictionary['price'], str(product.price))
+        self.assertEqual(dictionary['available'], product.available)
+        self.assertEqual(dictionary['category'], product.category.name)
+
+    def test_deserialize(self):
+        """Product should be read from dictionary"""
+        # create product
+        product = ProductFactory()
+        logger.info("Create for Deserializing: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                    product.id,
+                    product.name,
+                    product.description,
+                    product.price,
+                    product.available,
+                    product.category)
+        # store it in dictionary
+        dictionary_d = product.serialize()
+        logger.info("dictionary category = %s", dictionary_d['category'])
+        # self.assertEqual(dictionary_d['id'], product.id)
+        self.assertEqual(dictionary_d['name'], product.name)
+        self.assertEqual(dictionary_d['description'], product.description)
+        self.assertEqual(dictionary_d['price'], str(product.price))
+        self.assertEqual(dictionary_d['available'], product.available)
+        self.assertEqual(dictionary_d['category'], product.category.name)
+        # read dictionary and store it in product-instance
+        new_product = Product()
+        new_product.deserialize(dictionary_d)
+        logger.info("Read from Dictionary: \nproduct id= %s, \nname= %s, \
+            \ndescription= %s, \nprice= %2f, \navailable= %s, \ncategory= %s\n",
+                    new_product.id,
+                    new_product.name,
+                    new_product.description,
+                    new_product.price,
+                    new_product.available,
+                    new_product.category)
+        # self.assertEqual(new_product.id, dictionary_d['id'])
+        self.assertEqual(new_product.name, dictionary_d['name'])
+        self.assertEqual(new_product.description, dictionary_d['description'])
+        self.assertEqual(new_product.price, Decimal(dictionary_d['price']))
+        self.assertEqual(new_product.available, dictionary_d['available'])
+        self.assertEqual(new_product.category.name, dictionary_d['category'])
