@@ -440,10 +440,9 @@ class TestProductModel(unittest.TestCase):
 
     def test_invalid_dictionary_on_deserialize(self):
         """Test Invalid Dictionary on deserialize"""
-        product = Product()
-        dictionary_a = ["no dictionary", 42]
+        dictionary = ["I'm not a dictionary", 42]
         new_product = Product()
-        self.assertRaises(DataValidationError, new_product.deserialize, dictionary_a)
+        self.assertRaises(DataValidationError, new_product.deserialize, dictionary)
 
     def test_invalid_key_on_deserialize(self):
         """Test Invalid Dictionary Key on deserialize"""
