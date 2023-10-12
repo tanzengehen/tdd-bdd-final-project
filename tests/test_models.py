@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -172,10 +172,12 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(len(products), 1)
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "new description string")
-        # Todo: sad path
-        # product.id = None
-        # product.update()
-        # self.assertRaises(DataValidationError("Update called with empty ID field"))
+        
+    def test_invalid_id_on_update(self):
+        """test invalid ID on update"""
+        product = ProductFactory()
+        product.id = None
+        self.assertRaises(DataValidationError, product.update)
 
     def test_delete_a_product(self):
         """It should Delete a product in the database"""
@@ -286,7 +288,7 @@ class TestProductModel(unittest.TestCase):
         # store them in db
         for product in products_a:
             logger.info("Create for Find By Availibility: \nproduct id= %s, \nname= %s, \
-                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                \ndescription= %s, \nprice= %2f, \navailable= %s, \ncategory= %s\n",
                         product.id,
                         product.name,
                         product.description,
@@ -340,8 +342,27 @@ class TestProductModel(unittest.TestCase):
         for _ in found:
             self.assertEqual(Decimal(_.price), price0float)
 
+    def test_find_product_by_price_as_string(self):
+        """It should find all products with this price"""
+        # produce products
+        products_ps = ProductFactory.create_batch(5)
+        # store them in db
+        for product in products_ps:
+            logger.info("Create for Find By Availibility: \nproduct id= %s, \nname= %s, \
+                \ndescription= %s, \nprice= %s, \navailable= %s, \ncategory= %s\n",
+                        product.id,
+                        product.name,
+                        product.description,
+                        product.price,
+                        product.available,
+                        product.category)
+            product.id = None
+            product.create()
+        self.assertEqual(len(products_ps), 5)
+        price0float = products_ps[0].price
+        count = len([product for product in products_ps if product.price == price0float])
         # handle string-exception
-        price0string = str(products_p[0].price)
+        price0string = str(products_ps[0].price)
         logger.info("price = %s", price0string)
         # find products with this price
         found = Product.find_by_price(price0string)
@@ -408,3 +429,27 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(new_product.price, Decimal(dictionary_d['price']))
         self.assertEqual(new_product.available, dictionary_d['available'])
         self.assertEqual(new_product.category.name, dictionary_d['category'])
+
+    def test_invalid_availability_on_deserialize(self):
+        """Test Invalid Availability on deserialize"""
+        product = ProductFactory()
+        dictionary_foo = product.serialize()
+        dictionary_foo["available"] = "something else"
+        new_product = Product()
+        self.assertRaises(DataValidationError, new_product.deserialize, dictionary_foo)
+
+    def test_invalid_dictionary_on_deserialize(self):
+        """Test Invalid Dictionary on deserialize"""
+        product = Product()
+        dictionary_a = ["no dictionary", 42]
+        new_product = Product()
+        self.assertRaises(DataValidationError, new_product.deserialize, dictionary_a)
+
+    def test_invalid_key_on_deserialize(self):
+        """Test Invalid Dictionary Key on deserialize"""
+        product = Product()
+        product = ProductFactory()
+        dictionary_bar = product.serialize()
+        dictionary_bar.pop("price")
+        new_product = Product()
+        self.assertRaises(DataValidationError, new_product.deserialize, dictionary_bar)
