@@ -129,7 +129,20 @@ def get_products(product_id):
 
 #
 # PLACE YOUR CODE TO UPDATE A PRODUCT HERE
-#
+@app.route("/products/<product_id>", methods=["PUT"])
+def update_products(product_id):
+    """
+    Save a single Product
+    This endpoint will save changes of a Product in the db
+    """
+    app.logger.info("Request to Update a product with id[%s]", product_id)
+    old = Product.find(product_id)
+    if not old:
+        abort(status.HTTP_404_NOT_FOUND,
+        f"Product with id '{product_id}' was not found.")
+        # implement create
+    old.update()
+    return old.id, status.HTTP_200_OK
 
 ######################################################################
 # D E L E T E   A   P R O D U C T

@@ -175,15 +175,40 @@ class TestProductRoutes(TestCase):
         """It should Get a single Product"""
         # get an id
         test_product = self._create_products(1)[0]
+        logging.debug("Prodcut for Reading: %s", test_product)
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
+        logging.debug("data= %s", data)
         self.assertEqual(data["name"], test_product.name)
 
     def test_get_product_not_found(self):
         """It should not find a product without id"""
         response = self.client.get(f"{BASE_URL}/{0}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # ----------------------------------------------------------
+    # TEST UPDATE
+    # ----------------------------------------------------------
+    def test_update_product(self):
+        """It should Put a single Product"""
+        # get an id
+        test_product = self._create_products(1)[0]
+        logging.debug("Prodcut for Reading: %s", test_product)
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # change something
+        test_product.name = "new name"
+        logging.debug("product after changing: %s", test_product)
+        # save it
+        response = self.client.put(f"{BASE_URL}/{test_product.id}") #, test_product)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # check if changes were saved
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+
 
     ######################################################################
     # Utility functions
