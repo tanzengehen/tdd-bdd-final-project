@@ -1,5 +1,5 @@
 ######################################################################
-# Copyright 2016, 2022 John J. Rofrano. All Rights Reserved.
+# Copyright 2016, 2023 John J. Rofrano. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,141 +13,168 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ######################################################################
-
-# spell: ignore Rofrano jsonify restx dbname
 """
-Product Store Service with UI
+Product API Service Test Suite
+
+Test cases can be run with the following:
+  nosetests -v --with-spec --spec-color
+  coverage report -m
+  codecov --token=$CODECOV_TOKEN
+
+  While debugging just these tests it's convenient to use this:
+    nosetests --stop tests/test_service.py:TestProductService
 """
-from flask import jsonify, request, abort
-from flask import url_for  # noqa: F401 pylint: disable=unused-import
-from service.models import Product
-from service.common import status  # HTTP Status Codes
-from . import app
+import os
+import logging
+from decimal import Decimal
+from unittest import TestCase
+from service import app
+from service.common import status
+from service.models import db, init_db, Product
+from tests.factories import ProductFactory
+
+# Disable all but critical errors during normal test run
+# uncomment for debugging failing tests
+# logging.disable(logging.CRITICAL)
+
+# DATABASE_URI = os.getenv('DATABASE_URI', 'sqlite:///../db/test.db')
+DATABASE_URI = os.getenv(
+    "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
+)
+BASE_URL = "/products"
 
 
 ######################################################################
-# H E A L T H   C H E C K
+#  T E S T   C A S E S
 ######################################################################
-@app.route("/health")
-def healthcheck():
-    """Let them know our heart is still beating"""
-    return jsonify(status=200, message="OK"), status.HTTP_200_OK
+# pylint: disable=too-many-public-methods
+class TestProductRoutes(TestCase):
+    """Product Service tests"""
 
+    @classmethod
+    def setUpClass(cls):
+        """Run once before all tests"""
+        app.config["TESTING"] = True
+        app.config["DEBUG"] = False
+        # Set up the test database
+        app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
+        app.logger.setLevel(logging.CRITICAL)
+        init_db(app)
 
-######################################################################
-# H O M E   P A G E
-######################################################################
-@app.route("/")
-def index():
-    """Base URL for our service"""
-    return app.send_static_file("index.html")
+    @classmethod
+    def tearDownClass(cls):
+        """Run once after all tests"""
+        db.session.close()
 
+    def setUp(self):
+        """Runs before each test"""
+        self.client = app.test_client()
+        db.session.query(Product).delete()  # clean up the last tests
+        db.session.commit()
 
-######################################################################
-#  U T I L I T Y   F U N C T I O N S
-######################################################################
-def check_content_type(content_type):
-    """Checks that the media type is correct"""
-    if "Content-Type" not in request.headers:
-        app.logger.error("No Content-Type specified.")
-        abort(
-            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            f"Content-Type must be {content_type}",
-        )
+    def tearDown(self):
+        db.session.remove()
 
-    if request.headers["Content-Type"] == content_type:
-        return
+    ############################################################
+    # Utility function to bulk create products
+    ############################################################
+    def _create_products(self, count: int = 1) -> list:
+        """Factory method to create products in bulk"""
+        products = []
+        for _ in range(count):
+            test_product = ProductFactory()
+            response = self.client.post(BASE_URL, json=test_product.serialize())
+            self.assertEqual(
+                response.status_code, status.HTTP_201_CREATED, "Could not create test product"
+            )
+            new_product = response.get_json()
+            test_product.id = new_product["id"]
+            products.append(test_product)
+        return products
 
-    app.logger.error("Invalid Content-Type: %s", request.headers["Content-Type"])
-    abort(
-        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-        f"Content-Type must be {content_type}",
-    )
+    ############################################################
+    #  T E S T   C A S E S
+    ############################################################
+    def test_index(self):
+        """It should return the index page"""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(b"Product Catalog Administration", response.data)
 
+    def test_health(self):
+        """It should be healthy"""
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data['message'], 'OK')
 
-######################################################################
-# C R E A T E   A   N E W   P R O D U C T
-######################################################################
-@app.route("/products", methods=["POST"])
-def create_products():
-    """
-    Creates a Product
-    This endpoint will create a Product based the data in the body that is posted
-    """
-    app.logger.info("Request to Create a Product...")
-    check_content_type("application/json")
+    # ----------------------------------------------------------
+    # TEST CREATE
+    # ----------------------------------------------------------
+    def test_create_product(self):
+        """It should Create a new Product"""
+        test_product = ProductFactory()
+        logging.debug("Test Product: %s", test_product.serialize())
+        response = self.client.post(BASE_URL, json=test_product.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    data = request.get_json()
-    app.logger.info("Processing: %s", data)
-    product = Product()
-    product.deserialize(data)
-    product.create()
-    app.logger.info("Product with new id [%s] saved!", product.id)
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
 
-    message = product.serialize()
+        # Check the data is correct
+        new_product = response.get_json()
+        self.assertEqual(new_product["name"], test_product.name)
+        self.assertEqual(new_product["description"], test_product.description)
+        self.assertEqual(Decimal(new_product["price"]), test_product.price)
+        self.assertEqual(new_product["available"], test_product.available)
+        self.assertEqual(new_product["category"], test_product.category.name)
+
+        #
+        # Uncomment this code once READ is implemented
+        #
+
+        # # Check that the location header was correct
+        # response = self.client.get(location)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # new_product = response.get_json()
+        # self.assertEqual(new_product["name"], test_product.name)
+        # self.assertEqual(new_product["description"], test_product.description)
+        # self.assertEqual(Decimal(new_product["price"]), test_product.price)
+        # self.assertEqual(new_product["available"], test_product.available)
+        # self.assertEqual(new_product["category"], test_product.category.name)
+
+    def test_create_product_with_no_name(self):
+        """It should not Create a Product without a name"""
+        product = self._create_products()[0]
+        new_product = product.serialize()
+        del new_product["name"]
+        logging.debug("Product no name: %s", new_product)
+        response = self.client.post(BASE_URL, json=new_product)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_product_no_content_type(self):
+        """It should not Create a Product with no Content-Type"""
+        response = self.client.post(BASE_URL, data="bad data")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_product_wrong_content_type(self):
+        """It should not Create a Product with wrong Content-Type"""
+        response = self.client.post(BASE_URL, data={}, content_type="plain/text")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
     #
-    # Uncomment this line of code once you implement READ A PRODUCT
+    # ADD YOUR TEST CASES HERE
     #
-    # location_url = url_for("get_products", product_id=product.id, _external=True)
-    location_url = "/"  # delete once READ is implemented
-    return jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
 
+    ######################################################################
+    # Utility functions
+    ######################################################################
 
-######################################################################
-# L I S T   A L L   P R O D U C T S
-######################################################################
-
-#
-# PLACE YOUR CODE TO LIST ALL PRODUCTS HERE
-#
-
-######################################################################
-# R E A D   A   P R O D U C T
-######################################################################
-
-# PLACE YOUR CODE HERE TO READ A PRODUCT
-@app.route("/products/<product_id>", methods=["GET"])
-def get_products(product_id):
-    """
-    Retrieve a single Product
-    This endpoint will return a Product from the db found by id
-    """
-    app.logger.info("Request to Retrieve a product with id[%s]", product_id)
-    product = Product.find(product_id)
-    if not product:
-        abort(status.HTTP_404_NOT_FOUND,
-        f"Product with id '{product_id}' was not found.")
-    app.logger.info("Returning product: %s", product.name)
-    return product.serialize(), status.HTTP_200_OK
-
-
-######################################################################
-# U P D A T E   A   P R O D U C T
-######################################################################
-
-# PLACE YOUR CODE TO UPDATE A PRODUCT HERE
-@app.route("/products/<product>", methods=["PUT"])
-def update_product(product):
-    """
-    Update a single product
-    This endpoint will put changed data of a product to db
-    with product recognized by id
-    """
-    app.logging.info("Request to Update a product with id[%s]", product_id)
-    old_product = Product.find(product.id)
-    app.logging.info("old data: %s\nnew data: %s", old_product, product)
-    if not old_product:
-        # we should implement create instead of abord
-        abort(status.HTTP_404_NOT_FOUND,
-        f"Product with id '{product_id}' was not found.")
-    
-
-######################################################################
-# D E L E T E   A   P R O D U C T
-######################################################################
-
-
-#
-# PLACE YOUR CODE TO DELETE A PRODUCT HERE
-#
+    def get_product_count(self):
+        """save the current number of products"""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        # logging.debug("data = %s", data)
+        return len(data)
