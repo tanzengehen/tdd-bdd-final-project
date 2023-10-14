@@ -23,6 +23,7 @@ from flask import url_for  # noqa: F401 pylint: disable=unused-import
 from service.models import Product
 from service.common import status  # HTTP Status Codes
 from . import app
+import logging
 
 
 ######################################################################
@@ -135,14 +136,24 @@ def update_product(product_id):
     Save a single Product
     This endpoint will save changes of a Product in the db
     """
-    app.logger.info("Request to Update a product with id[%s]", product_id)
-    old = Product.find(product_id)
+    app.logger.info(f"Request to Update a product with id[%s]", product_id)
+    data = request.get_json()
+    # make product out of dict because update wants product instead of json
+    new = Product()
+    new.deserialize(data)
+    new.id = data["id"]
+    logging.info(f"new in update= %s", new)
+    logging.info(f"new_ser in update = %s", new.serialize())
+    old = Product.find(data["id"])
+    old = Product.find(new.id)
     if not old:
         abort(status.HTTP_404_NOT_FOUND,
-              f"Product with id '{product_id}' was not found.")
+              f"Product with id {data['id']} was not found.")
         # implement create
-    old.update()
-    return old.serialize(), status.HTTP_200_OK
+    # was daran ist 400 (bad request) ????
+    new.update()
+    logging.info(f"data_type after update = %s", type(new.serialize()))
+    return new.serialize(), status.HTTP_200_OK
 
 ######################################################################
 # D E L E T E   A   P R O D U C T

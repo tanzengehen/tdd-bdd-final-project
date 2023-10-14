@@ -194,20 +194,20 @@ class TestProductRoutes(TestCase):
         """It should Put a single Product"""
         # get an id
         test_product = self._create_products(1)[0]
-        logging.debug("Prodcut for Updating: %s", test_product)
+        logging.debug("Product for Updating: %s", test_product)
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # change something
-        test_product.name = "new name"
-        logging.debug("product after changing: %s", test_product)
+        test_product.name = "new_name"
+        logging.debug("Test Product after changing: %s", test_product.serialize())
         # save it
         response = self.client.put(f"{BASE_URL}/{test_product.id}", json=test_product.serialize())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # check if changes were saved: why not ?????
+        # check if changes were saved: how ?????
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
-        # self.assertEqual(data["name"], "new name")
+        self.assertEqual(data["name"], "new_name")
 
     ######################################################################
     # Utility functions
@@ -242,6 +242,24 @@ class TestProductRoutes(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_not_existing_product(self):
-        """It should nothing happen"""
+        """It should nothing happen when deleting unexisting product"""
         response = self.client.delete(f"{BASE_URL}/{0}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # ----------------------------------------------------------
+    # TEST LIST ALL
+    # ----------------------------------------------------------
+    def test_list_all_products(self):
+        """It should list all Products"""
+        # create products
+        products = self._create_products(5)
+        self.assertEqual(len(products), 5)
+        logging.debug(f"products: %s", products)
+        # check first product
+        response = self.client.get(f"{BASE_URL}/{products[0].id}")
+        data = response.get_json()
+        self.assertEqual(data["name"], products[0].name)
+        # list products
+        response = self.client.get(f"{BASE_URL}")
+
+
