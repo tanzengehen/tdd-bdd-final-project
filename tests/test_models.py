@@ -172,7 +172,7 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(len(products), 1)
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "new description string")
-        
+
     def test_invalid_id_on_update(self):
         """test invalid ID on update"""
         product = ProductFactory()

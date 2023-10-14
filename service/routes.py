@@ -118,7 +118,7 @@ def get_products(product_id):
     product = Product.find(product_id)
     if not product:
         abort(status.HTTP_404_NOT_FOUND,
-        f"Product with id '{product_id}' was not found.")
+              f"Product with id '{product_id}' was not found.")
     app.logger.info("Returning product: %s", product.name)
     return product.serialize(), status.HTTP_200_OK
 
@@ -130,7 +130,7 @@ def get_products(product_id):
 #
 # PLACE YOUR CODE TO UPDATE A PRODUCT HERE
 @app.route("/products/<product_id>", methods=["PUT"])
-def update_products(product_id):
+def update_product(product_id):
     """
     Save a single Product
     This endpoint will save changes of a Product in the db
@@ -139,10 +139,10 @@ def update_products(product_id):
     old = Product.find(product_id)
     if not old:
         abort(status.HTTP_404_NOT_FOUND,
-        f"Product with id '{product_id}' was not found.")
+              f"Product with id '{product_id}' was not found.")
         # implement create
     old.update()
-    return old.id, status.HTTP_200_OK
+    return old.serialize(), status.HTTP_200_OK
 
 ######################################################################
 # D E L E T E   A   P R O D U C T
@@ -151,4 +151,18 @@ def update_products(product_id):
 
 #
 # PLACE YOUR CODE TO DELETE A PRODUCT HERE
-#
+@app.route("/products/<product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    """
+    Delete a single Product
+    This endpoint will delete a Product from the db found by id
+    """
+    app.logger.info("Request to Delete a product with id[%s]", product_id)
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_404_NOT_FOUND,
+              f"Product with id '{product_id}' was not found.")
+        # or pass?
+    product.delete()
+    app.logger.info("%s has been deleted.", product_id)
+    return '', status.HTTP_204_NO_CONTENT
