@@ -240,3 +240,8 @@ class TestProductRoutes(TestCase):
         # check that it's gone
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_not_existing_product(self):
+        """It should nothing happen"""
+        response = self.client.delete(f"{BASE_URL}/{0}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

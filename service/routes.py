@@ -160,9 +160,8 @@ def delete_product(product_id):
     app.logger.info("Request to Delete a product with id[%s]", product_id)
     product = Product.find(product_id)
     if not product:
-        abort(status.HTTP_404_NOT_FOUND,
-              f"Product with id '{product_id}' was not found.")
-        # or pass?
+        return '', status.HTTP_404_NOT_FOUND,
+            f"Nothing to delete. No product with id '{product_id}'.")
     product.delete()
     app.logger.info("%s has been deleted.", product_id)
     return '', status.HTTP_204_NO_CONTENT
