@@ -161,7 +161,7 @@ def delete_product(product_id):
     product = Product.find(product_id)
     if not product:
         return '', status.HTTP_404_NOT_FOUND,
-            f"Nothing to delete. No product with id '{product_id}'.")
+        f"Nothing to delete. No product with id '{product_id}'."
     product.delete()
     app.logger.info("%s has been deleted.", product_id)
     return '', status.HTTP_204_NO_CONTENT
