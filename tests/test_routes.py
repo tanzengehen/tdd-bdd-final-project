@@ -274,25 +274,25 @@ class TestProductRoutes(TestCase):
             self.assertEqual(data[i]["category"], products[i].category.name)
 
     # ----------------------------------------------------------
-    # TEST LIST BY NAME
+    # TEST LIST BY AVAILABILITY
     # ----------------------------------------------------------
-    def test_list_products_by_name(self):
-        """It should list all Products with given name"""
+    def test_list_products_by_availability(self):
+        """It should list all Products by Availibility"""
         # create products
-        numbers = 15
+        numbers = 8
         test_products = self._create_products(numbers)
         logging.debug(f"%s products created for List By Name: %s", len(test_products), test_products)
         self.assertEqual(len(test_products), numbers)
         # get a name
-        test_filter = test_products[0].name
-        logging.debug(f"test_name= %s", test_filter)
-        filtered_products = [product for product in test_products if product.name == test_filter]
+        test_filter = {"available": test_products[0].available}
+        logging.debug(f"test_availibility= %s", test_filter)
+        filtered_products = [product for product in test_products if product.available == test_filter]
         # test get
-        response = self.client.get(BASE_URL, json={"name": test_filter})
+        response = self.client.get(BASE_URL, json=test_filter)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         logging.debug(f"response data: %s", data)
-        data_filtered = [prod for prod in data if prod["name"] == test_filter]
+        data_filtered = [prod for prod in data if prod["available"] == test_filter]
         # test number of selected products
         self.assertEqual(len(data_filtered), len(filtered_products))
         # test values
@@ -310,20 +310,51 @@ class TestProductRoutes(TestCase):
     def test_list_products_by_category(self):
         """It should list all Products with given category"""
         # create products
-        numbers = 15
+        numbers = 10
         test_products = self._create_products(numbers)
         logging.debug(f"%s products created for List By Category: %s", len(test_products), test_products)
         self.assertEqual(len(test_products), numbers)
         # get a category
-        test_filter = test_products[0].category
-        logging.debug(f"test_category= %s", test_filter)
-        filtered_products = [product for product in test_products if product.category == test_filter]
+        test_filter = {"category": test_products[0].category.name}
+        logging.debug(f"test_category for()= %s", test_filter)
+        filtered_products = [product for product in test_products if product.category.name == test_products[0].category.name]
+        logging.debug(f"right_products= %s", filtered_products)
         # test get
-        response = self.client.get(BASE_URL, json={"category": test_filter})
+        response = self.client.get(BASE_URL, json=test_filter)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         logging.debug(f"response data: %s", data)
-        data_filtered = [prod for prod in data if prod["category"] == test_filter]
+        # test number of selected products
+        self.assertEqual(len(data), len(filtered_products))
+        # test values
+        for i in range(len(filtered_products)):
+            self.assertEqual(data[i]["name"], filtered_products[i].name)
+            self.assertEqual(data[i]["id"], filtered_products[i].id)
+            self.assertEqual(data[i]["description"], filtered_products[i].description)
+            self.assertEqual(Decimal(data[i]["price"]), filtered_products[i].price)
+            self.assertEqual(data[i]["available"], filtered_products[i].available)
+            self.assertEqual(data[i]["category"], filtered_products[i].category.name)
+
+    # ----------------------------------------------------------
+    # TEST LIST BY NAME
+    # ----------------------------------------------------------
+    def test_list_products_by_name(self):
+        """It should list all Products with given name"""
+        # create products
+        numbers = 15
+        test_products = self._create_products(numbers)
+        logging.debug(f"%s products created for List By Name: %s", len(test_products), test_products)
+        self.assertEqual(len(test_products), numbers)
+        # get a name
+        test_filter = {"name": test_products[0].name}
+        logging.debug(f"test_name= %s", test_filter)
+        filtered_products = [product for product in test_products if product.name == test_filter]
+        # test get
+        response = self.client.get(BASE_URL, json=test_filter)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        logging.debug(f"response data: %s", data)
+        data_filtered = [prod for prod in data if prod["name"] == test_filter]
         # test number of selected products
         self.assertEqual(len(data_filtered), len(filtered_products))
         # test values
@@ -334,3 +365,24 @@ class TestProductRoutes(TestCase):
             self.assertEqual(Decimal(data_filtered[i]["price"]), filtered_products[i].price)
             self.assertEqual(data_filtered[i]["available"], filtered_products[i].available)
             self.assertEqual(data_filtered[i]["category"], filtered_products[i].category.name)
+
+    # ----------------------------------------------------------
+    # TEST LIST INVALID CRITERIA
+    # ----------------------------------------------------------
+    def test_list_products_by_invalid_criteria(self):
+        """It should not list Products when asking invalid criteria"""
+        # ask filtering by invalid attribut
+        response = self.client.get(BASE_URL, json={"non_valid": "something"})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    # ----------------------------------------------------------
+    # TEST LIST NOTHING FOUND
+    # ----------------------------------------------------------
+    #def test_list_products_no_found(self):
+    #    """It should not list Products when nothing found"""
+    #    # create product
+    #    test_product = ProductFactory()
+    #    # ask non existing product
+    #    response = self.client.get(BASE_URL, json={"name": "ikintu kidazwi"})
+    #    logging.debug(f"response data: %s", response.get_json())
+    #    self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

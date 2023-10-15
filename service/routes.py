@@ -20,7 +20,7 @@ Product Store Service with UI
 """
 from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
-from service.models import Product
+from service.models import Product, Category
 from service.common import status  # HTTP Status Codes
 from . import app
 import logging
@@ -104,24 +104,39 @@ def create_products():
 @app.route("/products", methods=["GET"])
 def list_products():
     """
-    Listes all Products
-    This endpoint will list all Products in the db
+    Listes Products
+    This endpoint will list all or filtered Products of the db
     """
     quest = request.get_json()
     logging.info("quest= %s", quest)
+    found_products = []
     # list all products
     if not quest:
         app.logger.info("Request to Retrieve all products")
-        products = Product.all()
+        found_products = Product.all()
+    # list products by availability
+    elif "available" in quest.keys():
+        app.logger.info("Request to Retrieve products with given availibility")
+        found_products = Product.find_by_availability(quest.get("available"))
     # list products by name
     elif "name" in quest.keys():
         app.logger.info("Request to Retrieve products with given name")
-        products = Product.find_by_name(quest.get("name"))
+        found_products = Product.find_by_name(quest.get("name"))
+    # list products by category
+    elif "category" in quest.keys():
+        app.logger.info("Request to Retrieve products with given category")
+        category = getattr(Category, quest.get("category"))  # like deserialize
+        found_products = Product.find_by_category(category)
+    # unimplemented filter criteria
+    else:
+        app.logger.info("No valid filter criteria")
+        return '', status.HTTP_204_NO_CONTENT
     # nothing found
-    if not products:
+    if not found_products:
         app.logger.info("No (such) product in database")
         return '', status.HTTP_204_NO_CONTENT
-    data = [product.serialize() for product in products]
+    data = [product.serialize() for product in found_products]
+    logging.info("found products= ** %s **", len(data))
     app.logger.info("Returning all %s products", len(data))
     return data, status.HTTP_200_OK
 
@@ -174,6 +189,7 @@ def update_product(product_id):
     new.update()
     logging.info(f"data_type after update = %s", type(new.serialize()))
     return new.serialize(), status.HTTP_200_OK
+
 
 ######################################################################
 # D E L E T E   A   P R O D U C T
