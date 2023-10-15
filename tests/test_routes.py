@@ -257,20 +257,80 @@ class TestProductRoutes(TestCase):
         products = self._create_products(numbers)
         logging.debug(f"products created for List All: %s", products)
         self.assertEqual(len(products), numbers)
-        # check number of products
-        products_got = Product.all()
-        self.assertEqual(len(products_got), numbers)
-        # check products
+        # test get
+        response = self.client.get(BASE_URL, json={})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        logging.debug(f"response data: %s", data)
+        # test number of products
+        self.assertEqual(len(data), numbers)
+        # test values
         for i in range(numbers):
-            self.assertEqual(products_got[i].name, products[i].name)
-        # was genau wird getestet??
-        # ask db
-        new_all = []
-        for i in range(numbers):
-            response = self.client.get(f"{BASE_URL}/{products[i].id}")
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            new_all.append(response.get_json())
-        logging.debug(f"products asked: %s", new_all[0])
-        
-        self.assertEqual(len(new_all), numbers)
-        
+            self.assertEqual(data[i]["name"], products[i].name)
+            self.assertEqual(data[i]["id"], products[i].id)
+            self.assertEqual(data[i]["description"], products[i].description)
+            self.assertEqual(Decimal(data[i]["price"]), products[i].price)
+            self.assertEqual(data[i]["available"], products[i].available)
+            self.assertEqual(data[i]["category"], products[i].category.name)
+
+    # ----------------------------------------------------------
+    # TEST LIST BY NAME
+    # ----------------------------------------------------------
+    def test_list_products_by_name(self):
+        """It should list all Products with given name"""
+        # create products
+        numbers = 15
+        test_products = self._create_products(numbers)
+        logging.debug(f"%s products created for List By Name: %s", len(test_products), test_products)
+        self.assertEqual(len(test_products), numbers)
+        # get a name
+        test_filter = test_products[0].name
+        logging.debug(f"test_name= %s", test_filter)
+        filtered_products = [product for product in test_products if product.name == test_filter]
+        # test get
+        response = self.client.get(BASE_URL, json={"name": test_filter})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        logging.debug(f"response data: %s", data)
+        data_filtered = [prod for prod in data if prod["name"] == test_filter]
+        # test number of selected products
+        self.assertEqual(len(data_filtered), len(filtered_products))
+        # test values
+        for i in range(len(filtered_products)):
+            self.assertEqual(data_filtered[i]["name"], filtered_products[i].name)
+            self.assertEqual(data_filtered[i]["id"], filtered_products[i].id)
+            self.assertEqual(data_filtered[i]["description"], filtered_products[i].description)
+            self.assertEqual(Decimal(data_filtered[i]["price"]), filtered_products[i].price)
+            self.assertEqual(data_filtered[i]["available"], filtered_products[i].available)
+            self.assertEqual(data_filtered[i]["category"], filtered_products[i].category.name)
+
+    # ----------------------------------------------------------
+    # TEST LIST BY CATEGORY
+    # ----------------------------------------------------------
+    def test_list_products_by_category(self):
+        """It should list all Products with given category"""
+        # create products
+        numbers = 15
+        test_products = self._create_products(numbers)
+        logging.debug(f"%s products created for List By Category: %s", len(test_products), test_products)
+        self.assertEqual(len(test_products), numbers)
+        # get a category
+        test_filter = test_products[0].category
+        logging.debug(f"test_category= %s", test_filter)
+        filtered_products = [product for product in test_products if product.category == test_filter]
+        # test get
+        response = self.client.get(BASE_URL, json={"category": test_filter})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        logging.debug(f"response data: %s", data)
+        data_filtered = [prod for prod in data if prod["category"] == test_filter]
+        # test number of selected products
+        self.assertEqual(len(data_filtered), len(filtered_products))
+        # test values
+        for i in range(len(filtered_products)):
+            self.assertEqual(data_filtered[i]["name"], filtered_products[i].name)
+            self.assertEqual(data_filtered[i]["id"], filtered_products[i].id)
+            self.assertEqual(data_filtered[i]["description"], filtered_products[i].description)
+            self.assertEqual(Decimal(data_filtered[i]["price"]), filtered_products[i].price)
+            self.assertEqual(data_filtered[i]["available"], filtered_products[i].available)
+            self.assertEqual(data_filtered[i]["category"], filtered_products[i].category.name)

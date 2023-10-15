@@ -102,14 +102,29 @@ def create_products():
 #
 # PLACE YOUR CODE TO LIST ALL PRODUCTS HERE
 @app.route("/products", methods=["GET"])
-def list_all_products():
+def list_products():
     """
     Listes all Products
     This endpoint will list all Products in the db
     """
-    app.logger.info("Request to Retrieve all products")
-    products = Product.all()
-    return products, status.HTTP_200_OK
+    quest = request.get_json()
+    logging.info("quest= %s", quest)
+    # list all products
+    if not quest:
+        app.logger.info("Request to Retrieve all products")
+        products = Product.all()
+    # list products by name
+    elif "name" in quest.keys():
+        app.logger.info("Request to Retrieve products with given name")
+        products = Product.find_by_name(quest.get("name"))
+    # nothing found
+    if not products:
+        app.logger.info("No (such) product in database")
+        return '', status.HTTP_204_NO_CONTENT
+    data = [product.serialize() for product in products]
+    app.logger.info("Returning all %s products", len(data))
+    return data, status.HTTP_200_OK
+
 
 ######################################################################
 # R E A D   A   P R O D U C T
