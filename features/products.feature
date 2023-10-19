@@ -38,3 +38,57 @@ Scenario: Create a Product
     And I should see "True" in the "Available" dropdown
     And I should see "Tools" in the "Category" dropdown
     And I should see "34.95" in the "Price" field
+
+Scenario: Read a product
+    When I visit the "Home Page"
+    And I set the "Name" to "Hat"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    When I copy the "Id" field
+    And I press the "Clear" button
+    And I paste the "Id" field
+    And I press the "Retrieve" button
+    Then I should see the message "Success"
+    And I should see "Hat" in the "Name" field
+    And I should see "A red fedora" in the "Description" field
+    And I should see "True" in the "Available" dropdown
+    And I should see "Cloths" in the "Category" dropdown
+    And I should see "59.95" in the "Price" field
+
+Scenario: Update a product
+    When I visit the "Home Page"
+    And I set the "Name" to "Big Mac"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "5.99" in the "Price" field
+    When I change the "Description" to "250g salad"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    When I copy the "Id" field
+    And I press the "Clear" button
+    And I paste the "Id" field
+    And I press the "Retrieve" button
+    Then I should see the message "Success"
+    And I should see "250g salad" in the "Description" field
+    When I press the "Clear" button
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Big Mac" in the results
+    And I should see "250g salad" in the "Description" field of "Big Mac" 
+    And I should not see "1/4 lb burger" in the "Description" field of "Big Mac"
+
+Scenario: Update a product
+    When I visit the "Home Page"
+    And I set the "Name" to "Big Mac"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "1/4 lb burger" in the "Description" field
+    When I copy the "Id" field
+    And I press the "Clear" button
+    And I paste the "Id" field
+    And I press the "Delete" button
+    Then I should see the message "Product has been deleted"
+    When I press the "Clear" button
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should not see "Big Mac" in the results
