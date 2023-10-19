@@ -22,6 +22,7 @@ from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
 from service.models import Product, Category
 from service.common import status  # HTTP Status Codes
+# from urllib.parse import quote_plus
 from . import app
 import logging
 
@@ -107,38 +108,38 @@ def list_products():
     Listes Products
     This endpoint will list all or filtered Products of the db
     """
-    quest = request.get_json()
-    logging.info("quest= %s", quest)
+    app.logger.info("Request to Retrieve products...")
     found_products = []
-    # list all products
-    if not quest:
-        app.logger.info("Request to Retrieve all products")
-        found_products = Product.all()
+    available = request.args.get("available")
+    category = request.args.get("category")
+    name = request.args.get("name")
+
     # list products by availability
-    elif "available" in quest.keys():
-        app.logger.info("Request to Retrieve products with given availibility")
-        found_products = Product.find_by_availability(quest.get("available"))
+    if available:
+        app.logger.info("... with given availibility")
+        available_value = available.lower() in ["true", "yes", 1]
+        found_products = Product.find_by_availability(available_value)
     # list products by name
-    elif "name" in quest.keys():
-        app.logger.info("Request to Retrieve products with given name")
-        found_products = Product.find_by_name(quest.get("name"))
+    elif name:
+        app.logger.info("... with given name")
+        found_products = Product.find_by_name(name)
     # list products by category
-    elif "category" in quest.keys():
-        app.logger.info("Request to Retrieve products with given category")
-        category = getattr(Category, quest.get("category"))  # like deserialize
-        found_products = Product.find_by_category(category)
-    # unimplemented filter criteria
+    elif category:
+        app.logger.info("... with given category")
+        category_value = getattr(Category, category.upper())  # like deserialize
+        found_products = Product.find_by_category(category_value)
+    # unimplemented filter criteria = list all
     else:
-        app.logger.info("No valid filter criteria")
-        return '', status.HTTP_204_NO_CONTENT
+        app.logger.info("... all products")
+        found_products = Product.all()
     # nothing found
     if not found_products:
         app.logger.info("No (such) product in database")
         return '', status.HTTP_204_NO_CONTENT
-    data = [product.serialize() for product in found_products]
-    logging.info("found products= ** %s **", len(data))
-    app.logger.info("Returning all %s products", len(data))
-    return data, status.HTTP_200_OK
+    result = [product.serialize() for product in found_products]
+    logging.info("found products= ** %s **", len(result))
+    app.logger.info("%s Products returned", len(result))
+    return result, status.HTTP_200_OK
 
 
 ######################################################################
@@ -169,26 +170,21 @@ def get_products(product_id):
 @app.route("/products/<product_id>", methods=["PUT"])
 def update_product(product_id):
     """
-    Save a single Product
+    Update a single Product
     This endpoint will save changes of a Product in the db
     """
-    app.logger.info(f"Request to Update a product with id[%s]", product_id)
-    data = request.get_json()
-    # make product out of dict because update() wants product instead of json
-    new = Product()
-    new.deserialize(data)
-    new.id = data["id"]
-    logging.info(f"new in update= %s", new)
-    logging.info(f"new_ser in update = %s", new.serialize())
-    old = Product.find(new.id)
-    if not old:
+    app.logger.info("Request to Update a product with id[%s]", product_id)
+    check_content_type("application/json")
+
+    product = Product.find(product_id)
+    if not product:
         abort(status.HTTP_404_NOT_FOUND,
-              f"Product with id {data['id']} was not found.")
+              f"Product with id '{product_id}' was not found.")
         # implement create
-    # kommen die Daten wirklich nicht in der db an???
-    new.update()
-    logging.info(f"data_type after update = %s", type(new.serialize()))
-    return new.serialize(), status.HTTP_200_OK
+    product.deserialize(request.get_json())
+    product.id = product_id
+    product.update()
+    return product.serialize(), status.HTTP_200_OK
 
 
 ######################################################################
@@ -204,9 +200,7 @@ def delete_product(product_id):
     """
     app.logger.info("Request to Delete a product with id[%s]", product_id)
     product = Product.find(product_id)
-    if not product:
-        return '', status.HTTP_404_NOT_FOUND,
-        f"Nothing to delete. No product with id '{product_id}'."
-    product.delete()
-    app.logger.info("%s has been deleted.", product_id)
+    if product:
+        product.delete()
+        app.logger.info("%s has been deleted.", product_id)
     return '', status.HTTP_204_NO_CONTENT
