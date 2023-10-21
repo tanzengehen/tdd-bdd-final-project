@@ -74,10 +74,10 @@ Scenario: Update a product
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "Big Mac" in the results
-    And I should see "250g salad" in the "Description" field of "Big Mac" 
-    And I should not see "1/4 lb burger" in the "Description" field of "Big Mac"
+    And I should see "250g salad" in the "Description" field
+    And I should not see "1/4 lb burger" in the "Description" field
 
-Scenario: Update a product
+Scenario: Delete a product
     When I visit the "Home Page"
     And I set the "Name" to "Big Mac"
     And I press the "Search" button
@@ -92,3 +92,45 @@ Scenario: Update a product
     And I press the "Search" button
     Then I should see the message "Success"
     And I should not see "Big Mac" in the results
+
+Scenario: List all products
+    When I visit the "Home Page"
+    And I press the "Clear" button
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Hat" in the results
+    And I should see "Shoes" in the results
+    And I should see "Big Mac" in the results
+    And I should see "Sheets" in the results
+
+Scenario: Search by Category
+    When I visit the "Home Page"
+    And I press the "Clear" button
+    And I select "Cloths" in the "Category" dropdown
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Hat" in the results
+    And I should see "Shoes" in the results
+    And I should not see "Big Mac" in the results
+    And I should not see "Sheets" in the results
+
+Scenario: Search by Availability
+    When I visit the "Home Page"
+    And I press the "Clear" button
+    And I select "True" in the "Availability" dropdown
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Hat" in the results
+    And I should see "Big Mac" in the results
+    And I should see "Sheets" in the results
+    And I should not see "Shoes" in the results
+
+Scenario: Search by Name
+    When I visit the "Home Page"
+    And I press the "Clear" button
+    And I set the "Name" to "Sheets"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Sheets" in the "Name" field
+    And I should see "Full bed sheets" in the "Description" field
+    
