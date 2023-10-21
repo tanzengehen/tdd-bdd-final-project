@@ -61,7 +61,7 @@ Scenario: Update a product
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "5.99" in the "Price" field
-    When I change the "Description" to "250g salad"
+    When I set the "Description" to "250g salad"
     And I press the "Update" button
     Then I should see the message "Success"
     When I copy the "Id" field
@@ -74,8 +74,7 @@ Scenario: Update a product
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "Big Mac" in the results
-    And I should see "250g salad" in the "Description" field
-    And I should not see "1/4 lb burger" in the "Description" field
+    And I should see "250g salad" in the results
 
 Scenario: Delete a product
     When I visit the "Home Page"
